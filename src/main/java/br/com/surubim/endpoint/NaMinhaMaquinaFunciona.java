@@ -8,14 +8,16 @@ import java.util.concurrent.Future;
 
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
+import org.springframework.stereotype.Service;
 import org.springframework.util.StopWatch;
 
 import br.com.surubim.model.OfertasDomain;
 import lombok.extern.log4j.Log4j2;
 
 @Log4j2
+@Service
 public class NaMinhaMaquinaFunciona {
-	StopWatch watch;
+	private StopWatch watch;
 
 	public List<OfertasDomain> executaTudo() throws InterruptedException, ExecutionException {
 
@@ -48,27 +50,29 @@ public class NaMinhaMaquinaFunciona {
 		return retornoAll;
 	}
 
-	@Async
+	@Async("asynchronousListenerExecutor")
 	public Future<List<OfertasDomain>> asyncMethodOne() throws InterruptedException {
 		log.info("Into asyncMethodOne " + System.nanoTime());
 		OfertasDomain item = new OfertasDomain();
 		item.setName("1");
 		item.setValor(12);
-		log.info("Start sleep asyncMethodOne 10000ms");
-		Thread.sleep(10000);
-		log.info("End sleep asyncMethodOne 10000ms");
-		return new AsyncResult<List<OfertasDomain>>(Arrays.asList(item));
+		log.info("Start sleep asyncMethodOne 3000ms");
+		Thread.sleep(3000);
+		log.info("End sleep asyncMethodOne 3000ms");
+		List<OfertasDomain> retorno = Arrays.asList(item);
+		return new AsyncResult<List<OfertasDomain>>(retorno);
 	}
 
-	@Async
+	@Async("asynchronousListenerExecutor")
 	public Future<List<OfertasDomain>> asyncMethodTwo() throws InterruptedException {
 		log.info("Into asyncMethodTwo " + System.nanoTime());
 		OfertasDomain item = new OfertasDomain();
 		item.setName("2");
 		item.setValor(22);
-		log.info("Start sleep asyncMethodTwo 5000ms");
-		Thread.sleep(5000);
-		log.info("End sleep asyncMethodTwo 5000ms");
-		return new AsyncResult<List<OfertasDomain>>(Arrays.asList(item));
+		log.info("Start sleep asyncMethodTwo 2000ms");
+		Thread.sleep(2000);
+		log.info("End sleep asyncMethodTwo 2000ms");
+		List<OfertasDomain> retorno = Arrays.asList(item);
+		return new AsyncResult<List<OfertasDomain>>(retorno);
 	}
 }

@@ -3,107 +3,41 @@ package br.com.surubim.endpoint;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-
-import javax.servlet.http.HttpServletRequest;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StopWatch;
-import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-
-import br.com.surubim.exceptions.ResourceNotFoundException;
-import br.com.surubim.logger.LoggerController;
-import br.com.surubim.model.ItemEntity;
 import br.com.surubim.model.OfertasDomain;
-import br.com.surubim.repositorio.ItensRepository;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 
 @RestController
-@RequestMapping("farm")
-@RequiredArgsConstructor(onConstructor = @__(@Autowired))
 @Log4j2
+@RequestMapping("farm")
 public class FarmaciaEndpoint {
-	StopWatch watch;
 
-	private final ItensRepository itensDao;
+	@Autowired
+	private NaMinhaMaquinaFunciona agoraVai;
 
-	@GetMapping(path = "/all")
-	public ResponseEntity<?> listAll(HttpServletRequest request) throws JsonProcessingException {
-		watch = new StopWatch();
-		watch.start();
-		Long timeStart = System.nanoTime();
-		Iterable<ItemEntity> returnItens = itensDao.findAll();
-		watch.stop();
-		log.info(LoggerController.getFormatter(request, timeStart, System.nanoTime(), watch.getTotalTimeMillis(),
-				returnItens));
-		return new ResponseEntity<>(returnItens, HttpStatus.OK);
-	}
+	private StopWatch watch;
 
-	@GetMapping(path = "item/{id}")
-	public ResponseEntity<?> getItemtById(HttpServletRequest request, @PathVariable("id") Long id)
-			throws JsonProcessingException {
-		watch = new StopWatch();
-		watch.start();
-		Long timeStart = System.nanoTime();
-		Optional<ItemEntity> item = null;
-		try {
-			verifyIfItemExists(id);
-			item = itensDao.findById(id);
-			watch.stop();
-			log.info(LoggerController.getFormatter(request, timeStart, System.nanoTime(), watch.getTotalTimeMillis(),
-					item.get()));
-		} catch (ResourceNotFoundException e) {
-			watch.stop();
-			log.error(LoggerController.getFormatterError(e, request, timeStart, System.nanoTime(),
-					watch.getTotalTimeMillis()));
-			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-		}
+//	@Autowired
+//	private ItensRepository itensDao;
 
-		return new ResponseEntity<>(item, HttpStatus.OK);
-	}
-
-	@PostMapping(path = "item/save")
-	@Transactional(rollbackFor = Exception.class)
-	public ResponseEntity<?> save(@Validated @RequestBody ItemEntity item, HttpServletRequest request)
-			throws JsonProcessingException {
-		watch = new StopWatch();
-		watch.start();
-		Long timeStart = System.nanoTime();
-		ItemEntity returnSave = itensDao.save(item);
-		watch.stop();
-		log.info(LoggerController.getFormatter(request, item, timeStart, System.nanoTime(), watch.getTotalTimeMillis(),
-				returnSave));
-		return new ResponseEntity<>(returnSave, HttpStatus.CREATED);
-	}
-
-	private void verifyIfItemExists(Long id) {
-		if (!itensDao.existsById(id)) {
-			throw new ResourceNotFoundException("ResourceNotFoundException");
-		}
-	}
-
-	// METODOS PARA TESTE DA REQUISIÇÃO ASYNC
+	// METODOS PARA TESTE DA REQUISIÇÃO ASYNC "NÃO FUNCIONA MAIS"
 
 	// localhost:8080/farm/metodoChamadorAsync
 
 	@GetMapping(path = "/metodoChamadorAsync")
-	private ResponseEntity<?> metodoChamador() throws InterruptedException, ExecutionException {
+	public ResponseEntity<?> metodoChamador() throws InterruptedException, ExecutionException {
 		watch = new StopWatch();
 		watch.start();
 
@@ -133,22 +67,29 @@ public class FarmaciaEndpoint {
 		return new ResponseEntity<>(retornoAll, HttpStatus.OK);
 	}
 
-	// REQUISIÇÃO DE METODOS ASYNC PRESENTE EM OUTRA CLASSE "NÃO FUNCIONA"
+	// REQUISIÇÃO DE METODOS ASYNC PRESENTE EM OUTRA CLASSE "FUNCIONA"
 
 	@GetMapping(path = "/metodoChamadorAsync2")
-	private ResponseEntity<?> metodoChamadorAsync() throws InterruptedException, ExecutionException {
-		NaMinhaMaquinaFunciona agoraVai = new NaMinhaMaquinaFunciona();
+	public ResponseEntity<?> metodoChamadorAsync() throws InterruptedException, ExecutionException {
 
 		this.watch = new StopWatch();
 		this.watch.start();
 
+		log.info("Calling asyncMethodOne " + System.nanoTime());
 		Future<List<OfertasDomain>> rt1 = agoraVai.asyncMethodOne();
+
+		log.info("Calling asyncMetodTwo " + System.nanoTime());
 		Future<List<OfertasDomain>> rt2 = agoraVai.asyncMethodTwo();
 
 		List<OfertasDomain> rt3 = new ArrayList<OfertasDomain>();
 
+		log.info("get asyncMethodOne " + System.nanoTime());
 		rt3.addAll(rt1.get());
+
+		log.info("get asyncMethodTwo " + System.nanoTime());
 		rt3.addAll(rt2.get());
+
+		watch.stop();
 
 		log.info("Total time lapsed " + this.watch.getTotalTimeMillis() + "ms");
 		return new ResponseEntity<>(rt3, HttpStatus.OK);
@@ -157,8 +98,7 @@ public class FarmaciaEndpoint {
 	// REQUISIÇÃO CHAMANDO UM METODO DE OUTRA CLASSE QUE UTILIZA METODOS ASYNC "NÃO
 	// FUNCIONA"
 	@GetMapping(path = "/metodoChamadorAsync3")
-	private ResponseEntity<?> metodoChamadorAsync3() throws InterruptedException, ExecutionException {
-		NaMinhaMaquinaFunciona agoraVai = new NaMinhaMaquinaFunciona();
+	public ResponseEntity<?> metodoChamadorAsync3() throws InterruptedException, ExecutionException {
 		List<OfertasDomain> retorno = agoraVai.executaTudo();
 
 		return new ResponseEntity<>(retorno, HttpStatus.OK);
@@ -170,9 +110,9 @@ public class FarmaciaEndpoint {
 		OfertasDomain item = new OfertasDomain();
 		item.setName("1");
 		item.setValor(12);
-		log.info("Start sleep asyncMethodOne 10000ms");
-		Thread.sleep(10000);
-		log.info("End sleep asyncMethodOne 10000ms");
+		log.info("Start sleep asyncMethodOne 3000ms");
+		Thread.sleep(3000);
+		log.info("End sleep asyncMethodOne 3000ms");
 		return new AsyncResult<List<OfertasDomain>>(Arrays.asList(item));
 	}
 
@@ -182,9 +122,9 @@ public class FarmaciaEndpoint {
 		OfertasDomain item = new OfertasDomain();
 		item.setName("2");
 		item.setValor(22);
-		log.info("Start sleep asyncMethodTwo 5000ms");
-		Thread.sleep(5000);
-		log.info("End sleep asyncMethodTwo 5000ms");
+		log.info("Start sleep asyncMethodTwo 2000ms");
+		Thread.sleep(2000);
+		log.info("End sleep asyncMethodTwo 2000ms");
 		return new AsyncResult<List<OfertasDomain>>(Arrays.asList(item));
 	}
 
@@ -245,4 +185,58 @@ public class FarmaciaEndpoint {
 		return Arrays.asList(item);
 	}
 
+//	@GetMapping(path = "/all")
+//	public ResponseEntity<?> listAll(HttpServletRequest request) throws JsonProcessingException {
+//		watch = new StopWatch();
+//		watch.start();
+//		Long timeStart = System.nanoTime();
+//		Iterable<ItemEntity> returnItens = itensDao.findAll();
+//		watch.stop();
+//		log.info(LoggerController.getFormatter(request, timeStart, System.nanoTime(), watch.getTotalTimeMillis(),
+//				returnItens));
+//		return new ResponseEntity<>(returnItens, HttpStatus.OK);
+//	}
+//
+//	@GetMapping(path = "item/{id}")
+//	public ResponseEntity<?> getItemtById(HttpServletRequest request, @PathVariable("id") Long id)
+//			throws JsonProcessingException {
+//		watch = new StopWatch();
+//		watch.start();
+//		Long timeStart = System.nanoTime();
+//		Optional<ItemEntity> item = null;
+//		try {
+//			verifyIfItemExists(id);
+//			item = itensDao.findById(id);
+//			watch.stop();
+//			log.info(LoggerController.getFormatter(request, timeStart, System.nanoTime(), watch.getTotalTimeMillis(),
+//					item.get()));
+//		} catch (ResourceNotFoundException e) {
+//			watch.stop();
+//			log.error(LoggerController.getFormatterError(e, request, timeStart, System.nanoTime(),
+//					watch.getTotalTimeMillis()));
+//			return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+//		}
+//
+//		return new ResponseEntity<>(item, HttpStatus.OK);
+//	}
+//
+//	@PostMapping(path = "item/save")
+//	@Transactional(rollbackFor = Exception.class)
+//	public ResponseEntity<?> save(@Validated @RequestBody ItemEntity item, HttpServletRequest request)
+//			throws JsonProcessingException {
+//		watch = new StopWatch();
+//		watch.start();
+//		Long timeStart = System.nanoTime();
+//		ItemEntity returnSave = itensDao.save(item);
+//		watch.stop();
+//		log.info(LoggerController.getFormatter(request, item, timeStart, System.nanoTime(), watch.getTotalTimeMillis(),
+//				returnSave));
+//		return new ResponseEntity<>(returnSave, HttpStatus.CREATED);
+//	}
+//
+//	private void verifyIfItemExists(Long id) {
+//		if (!itensDao.existsById(id)) {
+//			throw new ResourceNotFoundException("ResourceNotFoundException");
+//		}
+//	}
 }
